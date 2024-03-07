@@ -7,7 +7,7 @@
 #define SIZE_X 50
 #define SIZE_Y 23
 
-#define SCORE_FILE "./data/scoreRecords.dat"
+#define SCORE_FILE "../data/scoreRecords.dat"
 
 struct Portal
 {
