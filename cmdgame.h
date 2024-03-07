@@ -77,3 +77,4 @@ void print_persent(int persent)
 {
     printf("%d%%\n",persent);
 }
+////
