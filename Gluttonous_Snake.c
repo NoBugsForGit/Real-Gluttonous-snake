@@ -103,7 +103,7 @@ void Game(int_1 mode)
 void help()
 {
     const int STR_SIZE = 200;
-    FILE *fp_help = fopen("./help.txt", "rt");
+    FILE *fp_help = fopen("./data/help.snake", "rt");
     char str[STR_SIZE];
 
     if (fp_help == NULL)

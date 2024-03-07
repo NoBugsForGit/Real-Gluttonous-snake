@@ -7,6 +7,8 @@
 #define SIZE_X 50
 #define SIZE_Y 23
 
+#define SCORE_FILE "./data/scoreRecords.dat"
+
 struct Portal
 {
     coor x[2], y[2];
@@ -1108,7 +1110,7 @@ void store_score()
     }
 
     FILE *fp;
-    fp = fopen("./scoreRecords.dat", "wb");
+    fp = fopen(SCORE_FILE, "wb");
     fwrite(store, SIZE_OF_MESSAGE * 2, 1, fp);
     fclose(fp);
 }
@@ -1122,7 +1124,7 @@ void read_score()
     byte text[SIZE_OF_MESSAGE * 2];
 
     FILE *fp;
-    if ((fp = fopen("./scoreRecords.dat", "rb")) == NULL)
+    if ((fp = fopen(SCORE_FILE, "rb")) == NULL)
     {
         max_score = 0;
         strcpy(max_name, "None\0");
