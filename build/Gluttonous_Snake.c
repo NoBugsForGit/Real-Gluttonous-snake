@@ -50,11 +50,11 @@ void Game(int_1 mode)
             if (sleep_time < 0)
                 sleep_time = 0;
             Sleep(sleep_time);
-            if (life == 0)
+            if (life >= 0)
                 break;
         };
         CL;
-        printf("%s:%d\n", name, score);
+        printf("你死了！菜就多练！\n%s:%d分\n", name, score);
 
         if (score > max_score)
         {
