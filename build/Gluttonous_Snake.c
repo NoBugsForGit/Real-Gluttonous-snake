@@ -50,7 +50,7 @@ void Game(int_1 mode)
             if (sleep_time < 0)
                 sleep_time = 0;
             Sleep(sleep_time);
-            if (life >= 0)
+            if (life <= 0)
                 break;
         };
         CL;
