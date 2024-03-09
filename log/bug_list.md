@@ -49,7 +49,7 @@
 >## snakebug11
 >闪光弹出现错误，并且导致很多奇怪的bug,可行的解决方案是分离map和print_map
 
-## snakebug12
-磁铁实体没有实现
+>## snakebug12
+>磁铁实体没有实现
 
 

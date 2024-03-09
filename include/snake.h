@@ -129,6 +129,7 @@ const int gen_odd[ID_NUM] = {
     6   // 31
 
 };
+const int id19_dict[] = {1,2,3,4,23,24,25,26,27,28,29};  //标记磁铁不能吸引的实体id
 
 int sum_gen_odd[ID_NUM];
 
@@ -161,7 +162,6 @@ int id15_time = 0;
 coor id15_place[2];
 
 int id16_use_time = 0;
-bool id16_flag = false;
 
 int bleed_ready_time = 512; // 储存流血的倒计时
 
@@ -169,6 +169,7 @@ bool bleed = false;
 int_1 bleed_count;
 
 int id19_use_time = 0;
+bool id19_flag = false;
 
 int id22_time = 0;
 coor id22_place[2];
@@ -321,10 +322,10 @@ void init()
     id13 = false;
     id15_time = 0;
     id16_use_time = 0;
-    id16_flag = false;
     bleed_ready_time = 512; // 储存流血的倒计时
     bleed = false;
     id19_use_time = 0;
+    id19_flag = false;
     for (int i = 0; i < 7; i++)
     {
         portals[i].exist = false;
@@ -503,22 +504,36 @@ bool interactive(int_1 id, coor x, coor y)
 {
     int length_temp;
     
-    if (id16_flag)
+    if (id19_use_time > 0 && id19_flag == true)
     {
-        id16_flag = false;
-        if (
-            interactive(map[x-1][y-1], x-1,y-1) ||
-            interactive(map[x-1][y], x-1,y) ||
-            interactive(map[x-1][y+1], x-1,y+1) ||
+        id19_flag = false;
 
-            interactive(map[x][y-1], x,y-1) ||
-            interactive(map[x][y], x,y) ||
-            interactive(map[x][y+1], x,y+1) ||
+        int id19_radius[9][3] = {
+            map[x-1][y-1], x-1, y-1,
+            map[x-1][y], x-1, y,
+            map[x-1][y+1], x-1, y+1,
+            map[x][y-1], x, y-1,
+            map[x][y], x, y,
+            map[x][y+1], x, y+1,
+            map[x+1][y-1], x+1, y-1,
+            map[x+1][y], x+1, y,
+            map[x+1][y+1], x+1, y+1
+        };// 标记磁铁范围内所有实体id
+        
+        int id19_return = false;
 
-            interactive(map[x+1][y-1], x-1,y-1) ||
-            interactive(map[x+1][y], x-1,y) ||
-            interactive(map[x+1][y+1], x-1,y+1)
-        )
+        for (int i = 0; i < 9;i++)
+        {
+            if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29 )
+            {
+                id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
+                if (i != 4)
+                {
+                    map[id19_radius[i][1]][id19_radius[i][2]] = 0;
+                }
+            }
+        }
+        if (id19_return)
         {
             return true;
         }
@@ -856,12 +871,10 @@ void clock_count()
         }
     }
     if (id16_use_time > 0)
-    {
-        id16_flag = true;
+    { 
         memset(map_print, 16, SIZE_X * SIZE_Y);
         if (--id16_use_time == 0)
         {
-            id16_flag = false;
             memcpy(map_print, map, SIZE_X * SIZE_Y);
         }
     }
@@ -923,6 +936,7 @@ void clock_count()
     if (id19_use_time > 0)
     {
         id19_use_time--;
+        id19_flag = true;
     }
     if (id22_time > 0)
     {
