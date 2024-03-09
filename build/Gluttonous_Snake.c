@@ -19,7 +19,7 @@ const char *Github_url = "Github:https://github.com/NoBugsForGit/Real-Gluttonous
 
         引入联网系统~0.10
 
-        新实体⭐🔑🔒🧱🔥💧🛡️⚔️💣🔦💲🔶⬛🚪/腐肉🍖~？？？
+        新实体⭐🔑🔒🧱🔥💧🛡️⚔️💣🔦💲🔶🚪/腐肉🍖~？？？
 
         游戏平衡调整:
             削弱流血效果

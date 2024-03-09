@@ -524,14 +524,16 @@ bool interactive(int_1 id, coor x, coor y)
 
         for (int i = 0; i < 9;i++)
         {
-            if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29 )
+            if (i != 4)
             {
-                id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
-                if (i != 4)
+                if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29 )
                 {
+                    id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
                     map[id19_radius[i][1]][id19_radius[i][2]] = 0;
                 }
             }
+            else
+            id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
         }
         if (id19_return)
         {
@@ -666,7 +668,12 @@ bool interactive(int_1 id, coor x, coor y)
         break;
     case 20:
         srand(SEED);
-        return interactive((abs(rand()) % (ID_NUM - 4)) + 4, x, y);
+        int seed_id20 = (abs(rand()) % (ID_NUM - 4)) + 4;
+        if ((seed_id20 >= 23 && seed_id20 <= 29)||seed_id20 == 15)
+        {
+            seed_id20 -= 10;
+        }
+        return interactive(seed_id20, x, y);
         break;
     case 21:
         if (id13)
@@ -935,8 +942,14 @@ void clock_count()
     }
     if (id19_use_time > 0)
     {
-        id19_use_time--;
-        id19_flag = true;
+        if(--id19_use_time == 0)
+        {
+            id19_flag = false;
+        }
+        else
+        {
+            id19_flag = true;
+        }
     }
     if (id22_time > 0)
     {
