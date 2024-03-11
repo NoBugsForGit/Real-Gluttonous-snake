@@ -1,6 +1,6 @@
 #include "../include/snake.h"
 
-const char *help_first_line = "++Version0.4,DevelopByNoBugsForGit(Github)++url=https://github.com/NoBugsForGit/Real-Gluttonous-snake;\n";
+const char *help_first_line = "++Version0.5.0,DevelopByNoBugsForGit(Github)++url=https://github.com/NoBugsForGit/Real-Gluttonous-snake;\n";
 const char *Github_url = "Github:https://github.com/NoBugsForGit/Real-Gluttonous-snake\0";
 /*
     预期更新：

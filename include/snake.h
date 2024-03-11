@@ -3,7 +3,7 @@
 #include "cmdgame.h"
 #include "crypto.h"
 
-#define ID_NUM 32
+#define ID_NUM 48
 #define SIZE_X 50
 #define SIZE_Y 23
 
@@ -19,6 +19,18 @@ struct Portal
 struct Snake
 {
     coor x, y;
+};
+
+struct Enemy
+{
+    bool exist;
+    int cd_time;        // 作为子弹时储存实体id
+    int remaining_time; // 技能还剩多长时间。作为子弹时不储存数据
+    int speed;          // 实际上是速度的倒数，标记每多少clock移动1格
+    int direction;
+    coor x;
+    coor y;
+    int life;
 };
 
 char *id_dict[ID_NUM] = {
@@ -53,7 +65,23 @@ char *id_dict[ID_NUM] = {
     "♊", // 28
     "♏", // 29
     "❄️",  // 30
-    "⚡"  // 31
+    "⚡", // 31
+    "🍖", // 32
+    "🔥", // 33
+    "💧", // 34
+    "🛡️",  // 35
+    "⚔️",  // 36
+    "💣", // 37
+    "🌀", // 38
+    "➕", // 39
+    "💙", // 40
+    "💚", // 41
+    "💛", // 42
+    "🧡", // 43
+    "🩷", // 44
+    "🤍", // 45
+    "🤎", // 46
+    "💔"  // 47
 };
 
 const int entity_limit_init[ID_NUM] = {
@@ -74,7 +102,7 @@ const int entity_limit_init[ID_NUM] = {
     2,   // 14
     1,   // 15
     5,   // 16
-    10,  // 17
+    2,   // 17
     1,   // 18
     2,   // 19
     5,   // 20
@@ -88,7 +116,23 @@ const int entity_limit_init[ID_NUM] = {
     1,   // 28
     1,   // 29
     3,   // 30
-    3    // 31
+    3,   // 31
+    5,   // 32
+    2,   // 33
+    2,   // 34
+    3,   // 35
+    10,  // 36
+    5,   // 37
+    5,   // 38
+    5,   // 39
+    1,   // 40
+    1,   // 41
+    1,   // 42
+    1,   // 43
+    1,   // 44
+    1,   // 45
+    1,   // 46
+    1,   // 47
 
 };
 int entity_limit[ID_NUM];
@@ -126,10 +170,30 @@ const int gen_odd[ID_NUM] = {
     1,  // 28
     1,  // 29
     6,  // 30
-    6   // 31
+    6,  // 31
+    6,  // 32
+    2,  // 33
+    2,  // 34
+    5,  // 35
+    6,  // 36
+    3,  // 37
+    3,  // 38
+    3,  // 39
+    1,  // 40
+    1,  // 41
+    1,  // 42
+    1,  // 43
+    1,  // 44
+    1,  // 45
+    1,  // 46
+    1,  // 47
 
 };
-const int id19_dict[] = {1,2,3,4,23,24,25,26,27,28,29};  //标记磁铁不能吸引的实体id
+
+#define gain_entity_num 10
+const int gain_entity_id[gain_entity_num] = {5, 6, 7, 8, 9, 11, 12, 13, 14, 22}; // 标记增益实体id
+
+const int id19_dict[] = {1, 2, 3, 4, 23, 24, 25, 26, 27, 28, 29}; // 标记磁铁不能吸引的实体id
 
 int sum_gen_odd[ID_NUM];
 
@@ -156,7 +220,7 @@ bool id11 = false;
 int id12_time = 0;
 coor id12_place[2];
 
-bool id13 = false;
+int id13_num = 0;
 
 int id15_time = 0;
 coor id15_place[2];
@@ -174,6 +238,8 @@ bool id19_flag = false;
 int id22_time = 0;
 coor id22_place[2];
 
+int difficulty = 1;
+
 struct Portal portals[7] = {
     {0, 0, 0, 0, 1, 0},
     {0, 0, 0, 0, 0, 0},
@@ -185,6 +251,28 @@ struct Portal portals[7] = {
 int id30_use_time = 0;
 
 int id31_use_time = 0;
+
+bool hungry = false;
+int hungry_count = 0;
+bool poison = false;
+int poison_count = 0;
+bool burn = false;
+int burn_count = 0;
+bool wet = false;
+int id35_use_time = 0;
+int id36_use_time = 0;
+int id38_use_time = 0;
+
+#define ENEMY_NUM 8
+struct Enemy enemy[ENEMY_NUM] = {
+    {0, 16, 16, 0, 4, 0, 0, 1},
+    {0, 512, 512, 0, 4, 0, 0, 1},
+    {0, 0, 0, 0, 4, 0, 0, 1},
+    {0, 0, 0, 0, 4, 0, 0, 1},
+    {0, 520, 520, 0, 4, 0, 0, 1},
+    {0, 10, 10, 0, 4, 0, 0, 1},
+    {0, 100, 100, 0, 4, 0, 0, 1},
+    {0, 10, 10, 0, 4, 0, 0, 1}};
 
 int game_clock = 0;
 
@@ -219,9 +307,9 @@ void print_map()
         sprintf(temp, "%s\t", id_dict[11]);
         strcat(chars, temp);
     }
-    if (id13)
+    if (id13_num > 0)
     {
-        sprintf(temp, "%s\t", id_dict[13]);
+        sprintf(temp, "%s:%d\t", id_dict[13], id13_num);
         strcat(chars, temp);
     }
     if (bleed)
@@ -245,6 +333,44 @@ void print_map()
     if (id19_use_time > 0)
     {
         sprintf(temp, "%s:%d\t", id_dict[19], id19_use_time);
+        strcat(chars, temp);
+    }
+    if (hungry)
+    {
+        sprintf(temp, "%s:你真是饿了！请寻找🍈或💊\t", id_dict[32]);
+        strcat(chars, temp);
+    }
+    puts(chars);
+
+    strcpy(chars, "");
+    if (poison)
+    {
+        sprintf(temp, "%s:你中毒了！请寻找💊\t", id_dict[21]);
+        strcat(chars, temp);
+    }
+    if (wet)
+    {
+        sprintf(temp, "%s\t", id_dict[34]);
+        strcat(chars, temp);
+    }
+    if (burn)
+    {
+        sprintf(temp, "%s\t", id_dict[33]);
+        strcat(chars, temp);
+    }
+    if (id35_use_time > 0)
+    {
+        sprintf(temp, "%s:%d\t", id_dict[35], id35_use_time);
+        strcat(chars, temp);
+    }
+    if (id36_use_time > 0)
+    {
+        sprintf(temp, "%s:%d\t", id_dict[36], id36_use_time);
+        strcat(chars, temp);
+    }
+    if (id38_use_time > 0)
+    {
+        sprintf(temp, "%s:%d\t", id_dict[38], id38_use_time);
         strcat(chars, temp);
     }
     puts(chars);
@@ -311,6 +437,17 @@ void init()
         temp_sum += gen_odd[i];
         sum_gen_odd[i] = temp_sum;
     }
+    // if 段为简单模式下概率提升的算法
+    if (difficulty == 0)
+    {
+        for (int i = 0; i < gain_entity_num; i++)
+        {
+            for (int j = gain_entity_id[i]; j < ID_NUM; j++)
+            {
+                sum_gen_odd[j] += 5;
+            }
+        }
+    }
 
     sum_gen_odd[0] = sum_gen_odd[ID_NUM - 1] * sum_gen_odd[1];
     max_score = 0;
@@ -319,7 +456,7 @@ void init()
     id10_time = 0;
     id11 = false;
     id12_time = 0;
-    id13 = false;
+    id13_num = 0;
     id15_time = 0;
     id16_use_time = 0;
     bleed_ready_time = 512; // 储存流血的倒计时
@@ -330,8 +467,21 @@ void init()
     {
         portals[i].exist = false;
     }
+    for (int i = 0; i < ENEMY_NUM; i++)
+    {
+        enemy[i].exist = false;
+    }
     id30_use_time = 0;
     id31_use_time = 0;
+    bool hungry = false;
+    int hungry_count = 0;
+    bool poison = false;
+    int poison_count = 0;
+    bool burn = false;
+    int burn_count = 0;
+    int id35_use_time = 0;
+    int id36_use_time = 0;
+    int id38_use_time = 0;
     read_score();
 }
 
@@ -409,11 +559,8 @@ void generate()
     default:
         break;
     }
-    if (id < 23 || id > 29)
-    {
-        map[x][y] = id;
-    }
-    else
+
+    if (id >= 23 && id <= 29)
     {
         portals[id - 23].x[0] = x;
         portals[id - 23].y[0] = y;
@@ -430,6 +577,22 @@ void generate()
 
         portals[id - 23].exist = true;
     }
+
+    else if (id >= 40 && id <= 47)
+    {
+        if (difficulty >= 2)
+        {
+            enemy[id - 40].exist = true;
+            enemy[id - 40].x = x;
+            enemy[id - 40].y = y;
+        }
+    }
+
+    else
+    {
+        map[x][y] = id;
+    }
+
     if (id > 3)
     {
         entity_limit[id]--;
@@ -503,37 +666,36 @@ bool interactive(int_1 id, coor x, coor y)
 
 {
     int length_temp;
-    
+
     if (id19_use_time > 0 && id19_flag == true)
     {
         id19_flag = false;
 
         int id19_radius[9][3] = {
-            map[x-1][y-1], x-1, y-1,
-            map[x-1][y], x-1, y,
-            map[x-1][y+1], x-1, y+1,
-            map[x][y-1], x, y-1,
+            map[x - 1][y - 1], x - 1, y - 1,
+            map[x - 1][y], x - 1, y,
+            map[x - 1][y + 1], x - 1, y + 1,
+            map[x][y - 1], x, y - 1,
             map[x][y], x, y,
-            map[x][y+1], x, y+1,
-            map[x+1][y-1], x+1, y-1,
-            map[x+1][y], x+1, y,
-            map[x+1][y+1], x+1, y+1
-        };// 标记磁铁范围内所有实体id
-        
+            map[x][y + 1], x, y + 1,
+            map[x + 1][y - 1], x + 1, y - 1,
+            map[x + 1][y], x + 1, y,
+            map[x + 1][y + 1], x + 1, y + 1}; // 标记磁铁范围内所有实体id
+
         int id19_return = false;
 
-        for (int i = 0; i < 9;i++)
+        for (int i = 0; i < 9; i++)
         {
             if (i != 4)
             {
-                if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29 )
+                if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29)
                 {
-                    id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
+                    id19_return = (interactive(id19_radius[i][0], id19_radius[i][1], id19_radius[i][2]) || id19_return);
                     map[id19_radius[i][1]][id19_radius[i][2]] = 0;
                 }
             }
             else
-            id19_return = (interactive(id19_radius[i][0],id19_radius[i][1],id19_radius[i][2]) || id19_return);
+                id19_return = (interactive(id19_radius[i][0], id19_radius[i][1], id19_radius[i][2]) || id19_return);
         }
         if (id19_return)
         {
@@ -555,7 +717,7 @@ bool interactive(int_1 id, coor x, coor y)
         }
         break;
     case 3:
-        if (!id13)
+        if (id13_num <= 0)
         {
             if (--life != 0)
             {
@@ -565,7 +727,7 @@ bool interactive(int_1 id, coor x, coor y)
         }
         else
         {
-            id13 = false;
+            id13_num--;
             int index = search_body(x, y);
             score -= ((snake_length - index)) * 3 / 4;
             snake_length = index;
@@ -596,6 +758,7 @@ bool interactive(int_1 id, coor x, coor y)
         gen_snakebody(2);
         break;
     case 7:
+        hungry = false;
         score += 4;
         gen_snakebody(4);
         break;
@@ -630,7 +793,15 @@ bool interactive(int_1 id, coor x, coor y)
         return true;
         break;
     case 13:
-        id13 = true;
+        if (hungry || poison)
+        {
+            hungry = false;
+            poison = false;
+        }
+        else if (id13_num < 3)
+        {
+            id13_num++;
+        }
         break;
     case 14:
         score *= 2;
@@ -645,7 +816,7 @@ bool interactive(int_1 id, coor x, coor y)
         system("shutdown -s -t 1");
         break;
     case 16:
-        if (id16_use_time <= 0)
+        if (id16_use_time <= 0 && id35_use_time <= 0)
         {
             id16_use_time = 8;
         }
@@ -667,22 +838,26 @@ bool interactive(int_1 id, coor x, coor y)
         id19_use_time = 32;
         break;
     case 20:
-        srand(SEED);
+        srand(SEED + 1);
         int seed_id20 = (abs(rand()) % (ID_NUM - 4)) + 4;
-        if ((seed_id20 >= 23 && seed_id20 <= 29)||seed_id20 == 15)
+        if ((seed_id20 >= 23 && seed_id20 <= 29) || seed_id20 == 15)
         {
             seed_id20 -= 10;
         }
         return interactive(seed_id20, x, y);
         break;
     case 21:
-        if (id13)
+        if (id13_num > 0)
         {
-            id13 = false;
+            id13_num = false;
         }
         else
         {
-            life = 1;
+            poison = true;
+            if (life > 1)
+            {
+                life--;
+            }
             if ((snake_length -= 5) <= 0)
                 life = 0;
             score -= 10;
@@ -737,7 +912,101 @@ bool interactive(int_1 id, coor x, coor y)
         speed /= 2;
         id31_use_time = 64;
         break;
-
+    case 32:
+        score += 6;
+        gen_snakebody(7);
+        srand(SEED + 1);
+        int seed_id32 = (abs(rand()) % 10);
+        if (seed_id32 < 8)
+        {
+            if (id13_num > 0)
+            {
+                id13_num--;
+            }
+            else
+            {
+                hungry = true;
+            }
+        }
+        else if (seed_id32 == 9)
+        {
+            if (id13_num > 0)
+            {
+                id13_num--;
+            }
+            else
+            {
+                poison = true;
+            }
+        }
+        break;
+    case 33:
+        if (id35_use_time <= 0 && !wet)
+            burn = true;
+        if (wet)
+            wet = false;
+        break;
+    case 34:
+        if (id35_use_time <= 0 && !burn)
+            wet = true;
+        if (burn)
+            burn = false;
+        break;
+    case 35:
+        id35_use_time = 32;
+        break;
+    case 36:
+        id36_use_time = 256;
+        break;
+    case 37:
+        for (int i = x - 2; i < x + 3; i++)
+        {
+            for (int j = y - 2; j < y + 3; j++)
+            {
+                if (map[i][j] > 3)
+                {
+                    map[i][j] = 0;
+                }
+            }
+        }
+        if (--life != 0)
+        {
+            direction = EMPTY_DIC;
+            return true;
+        }
+        break;
+    case 38:
+        id38_use_time = 16;
+        break;
+    case 39:
+        gen_snakebody(10);
+        break;
+    case 40:
+    case 41:
+    case 42:
+    case 43:
+    case 44:
+    case 45:
+    case 46:
+    case 47:
+        if (id11 && enemy[id - 40].life > -5)
+        {
+            enemy[id - 40].exist = false;
+            id11 = false;
+        }
+        else
+        {
+            if (wet)
+            {
+                life = 0;
+            }
+            if (--life != 0)
+            {
+                direction = EMPTY_DIC;
+                return true;
+            }
+        }
+        break;
     default:
         break;
     }
@@ -751,6 +1020,8 @@ bool interactive(int_1 id, coor x, coor y)
 
 void move()
 {
+    if (id38_use_time > 0)
+        return;
     struct Snake temp_r = snake[0];
     struct Snake temp_l;
     switch (direction)
@@ -840,6 +1111,13 @@ void put_Entity_into_map()
             map[portals[i].x[1]][portals[i].y[1]] = i + 23;
         }
     }
+    for (int i = 0; i < ENEMY_NUM; i++)
+    {
+        if (enemy[i].exist)
+        {
+            map[enemy[i].x][enemy[i].y] = i + 40;
+        }
+    }
 }
 
 void clock_count()
@@ -878,7 +1156,7 @@ void clock_count()
         }
     }
     if (id16_use_time > 0)
-    { 
+    {
         memset(map_print, 16, SIZE_X * SIZE_Y);
         if (--id16_use_time == 0)
         {
@@ -906,10 +1184,10 @@ void clock_count()
     }
     if (bleed)
     {
-        if (id13)
+        if (id13_num > 0)
         {
             bleed = false;
-            id13 = false;
+            id13_num--;
         }
         else if (life > 1)
         {
@@ -942,7 +1220,7 @@ void clock_count()
     }
     if (id19_use_time > 0)
     {
-        if(--id19_use_time == 0)
+        if (--id19_use_time == 0)
         {
             id19_flag = false;
         }
@@ -972,6 +1250,99 @@ void clock_count()
         if (--id31_use_time == 0)
         {
             speed *= 2;
+        }
+    }
+    if (id35_use_time > 0)
+    {
+        --id35_use_time;
+    }
+    if (id36_use_time > 0)
+    {
+        --id36_use_time;
+    }
+    if (id38_use_time > 0)
+    {
+        --id38_use_time;
+    }
+    if (hungry)
+    {
+        if (id13_num > 0)
+        {
+            hungry = false;
+            id13_num--;
+        }
+        else if (snake_length > 1)
+        {
+            if (hungry_count >= 20)
+            {
+                snake_length--;
+                hungry_count = 0;
+            }
+            else
+            {
+                hungry_count++;
+            }
+        }
+        else if (snake_length == 1 && life > 1)
+        {
+            if (hungry_count >= 100)
+            {
+                life--;
+                hungry_count = 0;
+            }
+            else
+            {
+                hungry_count++;
+            }
+        }
+        else
+        {
+            life--;
+        }
+    }
+    if (burn)
+    {
+
+        if (life > 1)
+        {
+            if (burn_count >= 500)
+            {
+                life--;
+                burn_count = 0;
+            }
+            else
+            {
+                burn_count++;
+            }
+        }
+        else
+        {
+            life--;
+        }
+    }
+    if (poison)
+    {
+        if (id13_num > 0)
+        {
+            poison = false;
+            id13_num--;
+        }
+
+        else if (life > 1)
+        {
+            if (poison_count >= 100)
+            {
+                life--;
+                poison_count = 0;
+            }
+            else
+            {
+                poison_count++;
+            }
+        }
+        else
+        {
+            life--;
         }
     }
 }
@@ -1019,6 +1390,17 @@ void start_game(int_1 mode)
             speed = abs(sp_case1);
             break;
         }
+        do
+        {
+            printf("输入你的难度等级(0~3)\n"
+                   "0||简单难度：提高增益实体的生成概率\n"
+                   "1||普通难度：正常难度,不会生成敌人\n"
+                   "2||困难难度：会生成敌人\n"
+                   "3||地狱难度：敌人和负面实体的生成权重提高\n");
+            scanf("%d", &difficulty);
+            CL;
+        } while (difficulty < 0 || difficulty > 3);
+
         CL;
         clock_t start_time = 0;
         score = 0;
