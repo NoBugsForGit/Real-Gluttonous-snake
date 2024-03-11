@@ -40,13 +40,13 @@ void Game(int_1 mode)
             while_start_time = clock();
             generate();
             put_Entity_into_map();
-            CL;
-            print_map();
             if (get_input())
                 break;
             move();
             clock_count();
             clock_t sleep_time = speed - (clock() - while_start_time);
+            CL;
+            print_map();
             if (sleep_time < 0)
                 sleep_time = 0;
             Sleep(sleep_time);

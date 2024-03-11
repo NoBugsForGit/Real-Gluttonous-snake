@@ -475,7 +475,7 @@ void init()
     id31_use_time = 0;
     bool hungry = false;
     int hungry_count = 0;
-    bool poison = false;
+    bool poison = true;
     int poison_count = 0;
     bool burn = false;
     int burn_count = 0;
@@ -944,7 +944,7 @@ bool interactive(int_1 id, coor x, coor y)
         if (id35_use_time <= 0 && !wet)
             burn = true;
         if (wet)
-            wet = false;
+            burn = false;
         break;
     case 34:
         if (id35_use_time <= 0 && !burn)
@@ -1297,13 +1297,13 @@ void clock_count()
         }
         else
         {
-            life--;
+            hungry = false;
         }
     }
     if (burn)
     {
 
-        if (life > 1)
+        if (life > 0)
         {
             if (burn_count >= 500)
             {
@@ -1315,10 +1315,7 @@ void clock_count()
                 burn_count++;
             }
         }
-        else
-        {
-            life--;
-        }
+    
     }
     if (poison)
     {
@@ -1328,7 +1325,7 @@ void clock_count()
             id13_num--;
         }
 
-        else if (life > 1)
+        else if (life > 0)
         {
             if (poison_count >= 100)
             {
@@ -1339,10 +1336,6 @@ void clock_count()
             {
                 poison_count++;
             }
-        }
-        else
-        {
-            life--;
         }
     }
 }
