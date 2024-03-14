@@ -9,6 +9,10 @@
 
 #define SCORE_FILE "../data/scoreRecords.dat"
 
+const char *help_first_line = "++Version0.5.0,DevelopByNoBugsForGit(Github)++url=https://github.com/NoBugsForGit/Real-Gluttonous-snake;\n";
+const char *Github_url = "Github:https://github.com/NoBugsForGit/Real-Gluttonous-snake\0";
+void help();
+
 struct Portal
 {
     coor x[2], y[2];
@@ -23,14 +27,13 @@ struct Snake
 
 struct Enemy
 {
-    bool exist;
     int cd_time;        // 作为子弹时储存实体id
     int remaining_time; // 技能还剩多长时间。作为子弹时不储存数据
     int speed;          // 实际上是速度的倒数，标记每多少clock移动1格
     int direction;
     coor x;
     coor y;
-    int life;
+    int life; // 小于-5视为无敌
 };
 
 char *id_dict[ID_NUM] = {
@@ -265,14 +268,14 @@ int id38_use_time = 0;
 
 #define ENEMY_NUM 8
 struct Enemy enemy[ENEMY_NUM] = {
-    {0, 16, 16, 0, 4, 0, 0, 1},
-    {0, 512, 512, 0, 4, 0, 0, 1},
-    {0, 0, 0, 0, 4, 0, 0, 1},
-    {0, 0, 0, 0, 4, 0, 0, 1},
-    {0, 520, 520, 0, 4, 0, 0, 1},
-    {0, 10, 10, 0, 4, 0, 0, 1},
-    {0, 100, 100, 0, 4, 0, 0, 1},
-    {0, 10, 10, 0, 4, 0, 0, 1}};
+    {16, 16, 0, 4, 0, 0, 1},
+    {512, 512, 0, 4, 0, 0, 1},
+    {0, 0, 0, 4, 0, 0, 1},
+    {0, 0, 0, 4, 0, 0, 1},
+    {520, 520, 0, 4, 0, 0, 1},
+    {10, 10, 0, 4, 0, 0, 1},
+    {100, 100, 0, 4, 0, 0, 1},
+    {10, 10, 0, 4, 0, 0, 1}};
 
 int game_clock = 0;
 
@@ -469,7 +472,7 @@ void init()
     }
     for (int i = 0; i < ENEMY_NUM; i++)
     {
-        enemy[i].exist = false;
+        enemy[i].life = 0;
     }
     id30_use_time = 0;
     id31_use_time = 0;
@@ -582,7 +585,7 @@ void generate()
     {
         if (difficulty >= 2)
         {
-            enemy[id - 40].exist = true;
+            enemy[id - 40].life = 1;
             enemy[id - 40].x = x;
             enemy[id - 40].y = y;
         }
@@ -655,7 +658,7 @@ void gen_snakebody(int n)
 
 bool isAbsorbable(int_1 id)
 {
-    if ((id < 5) || (id == 15) || ((id > 22) && (id < 30)))
+    if ((id < 5) || (id == 15) || ((id > 22) && (id < 30)) || (id > 39 && id < 48))
         return false;
     else
         return true;
@@ -688,7 +691,7 @@ bool interactive(int_1 id, coor x, coor y)
         {
             if (i != 4)
             {
-                if ((id19_radius[i][0] > 4 && id19_radius[i][0] < 23) || id19_radius[i][0] > 29)
+                if (isAbsorbable(id19_radius[i][0]))
                 {
                     id19_return = (interactive(id19_radius[i][0], id19_radius[i][1], id19_radius[i][2]) || id19_return);
                     map[id19_radius[i][1]][id19_radius[i][2]] = 0;
@@ -991,7 +994,7 @@ bool interactive(int_1 id, coor x, coor y)
     case 47:
         if (id11 && enemy[id - 40].life > -5)
         {
-            enemy[id - 40].exist = false;
+            enemy[id - 40].life = 0;
             id11 = false;
         }
         else
@@ -1113,9 +1116,95 @@ void put_Entity_into_map()
     }
     for (int i = 0; i < ENEMY_NUM; i++)
     {
-        if (enemy[i].exist)
+        if (enemy[i].life > 0 || enemy[i].life < -5)
         {
             map[enemy[i].x][enemy[i].y] = i + 40;
+        }
+    }
+}
+
+bool isEnemy(int id)
+{
+    if ((id > 39 && id < 48))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void attack(int range)
+{
+    int attack_x = 0;
+    int attack_y = 0;
+    for (int i = 0; i < range; i++)
+    {
+        switch (direction)
+        {
+        case LEFT:
+            attack_x = snake[0].x - i;
+            attack_y = snake[0].y;
+            break;
+        case RIGHT:
+            attack_x = snake[0].x + i;
+            attack_y = snake[0].y;
+            break;
+        case DOWN:
+            attack_x = snake[0].x;
+            attack_y = snake[0].y + i;
+            break;
+        case UP:
+            attack_x = snake[0].x;
+            attack_y = snake[0].y - i;
+            break;
+        default:
+            break;
+        }
+        if (attack_x >= SIZE_X || attack_y >= SIZE_Y)
+            break;
+        if (isEnemy(map[attack_x][attack_y]))
+        {
+            enemy[map[attack_x][attack_y] - 40].life--;
+        }
+        else if (map[attack_x][attack_y] == 4)
+        {
+            map[attack_x][attack_y] = 0;
+        }
+    }
+}
+
+void attack_surrounded()
+{
+    int check_map[SIZE_X][SIZE_Y] = {8};
+    for (int i = 0; i < snake_length; i++)
+    {
+        check_map[snake[i].x - 1][snake[i].y - 1]--;
+        check_map[snake[i].x][snake[i].y - 1]--;
+        check_map[snake[i].x + 1][snake[i].y - 1]--;
+        check_map[snake[i].x - 1][snake[i].y]--;
+        check_map[snake[i].x][snake[i].y]--;
+        check_map[snake[i].x + 1][snake[i].y]--;
+        check_map[snake[i].x - 1][snake[i].y + 1]--;
+        check_map[snake[i].x][snake[i].y + 1]--;
+        check_map[snake[i].x + 1][snake[i].y + 1]--;
+    }
+    for (int i = 0; i < SIZE_X; i++)
+    {
+        for (int j = 0; i < SIZE_Y; i++)
+        {
+            if (check_map[i][j] == 0)
+            {
+                if (map[i][j] == 4)
+                {
+                    map[i][j] = 0;
+                }
+                else if (isEnemy(map[i][j]))
+                {
+                    enemy[map[i][j] - 40].life--;
+                }
+            }
         }
     }
 }
@@ -1220,7 +1309,7 @@ void clock_count()
     }
     if (id19_use_time > 0)
     {
-        if (--id19_use_time == 0)
+        if (--id19_use_time <= 0)
         {
             id19_flag = false;
         }
@@ -1315,7 +1404,6 @@ void clock_count()
                 burn_count++;
             }
         }
-    
     }
     if (poison)
     {
@@ -1461,7 +1549,18 @@ bool get_input()
         break;
     case '[':
     case SPACE:
-        wait_for_kbhit();
+    SPACE_START:
+        puts("已暂停,按 H 查看帮助");
+        while (!kbhit())
+            Sleep(100);
+        char ch = getch();
+        if (ch == 'h' || ch == 'H')
+        {
+            help();
+            CL;
+            print_map();
+            goto SPACE_START;
+        }
         break;
     case ']':
     case ESC:
@@ -1470,6 +1569,19 @@ bool get_input()
         printf("确定要退出嘛?\n按Y确认退出");
         if (getch() == 'y')
             return true;
+        break;
+    case 'Q':
+    case 'q':
+    case '>':
+    case '.':
+        attack_surrounded();
+        break;
+    case 'E':
+    case 'e':
+    case '/':
+    case '?':
+        if (id36_use_time > 0)
+            attack(10);
         break;
     default:
         break;
@@ -1581,4 +1693,38 @@ void read_score()
 
     max_score = atoi(temp_score);
     strcpy(max_name, temp_name);
+}
+
+void help()
+{
+    const int STR_SIZE = 200;
+    FILE *fp_help = fopen("../data/help.snake", "rt");
+    char str[STR_SIZE];
+
+    if (fp_help == NULL)
+    {
+        printf("打开帮助文档失败\n请检查程序所在文件夹中是否有help.snake文件\n");
+        puts("按任意键返回");
+        wait_for_kbhit();
+    }
+    else
+    {
+        fgets(str, STR_SIZE - 1, fp_help);
+        if (strcmp(str, help_first_line) != 0)
+        {
+            puts("警告:帮助文档已失效或者被意外改动,建议您重新下载帮助文档以获取正确帮助!");
+            puts(Github_url);
+            Sleep(1000);
+        }
+        while (fgets(str, STR_SIZE - 1, fp_help) != NULL)
+        {
+            printf("%s", str);
+        }
+
+        fclose(fp_help);
+        putchar('\n');
+        putchar('\n');
+        puts("按任意键返回");
+        wait_for_kbhit();
+    }
 }

@@ -1,7 +1,6 @@
 #include "../include/snake.h"
 
-const char *help_first_line = "++Version0.5.0,DevelopByNoBugsForGit(Github)++url=https://github.com/NoBugsForGit/Real-Gluttonous-snake;\n";
-const char *Github_url = "Github:https://github.com/NoBugsForGit/Real-Gluttonous-snake\0";
+
 /*
     预期更新：
     
@@ -100,39 +99,7 @@ void Game(int_1 mode)
     }
 }
 
-void help()
-{
-    const int STR_SIZE = 200;
-    FILE *fp_help = fopen("../data/help.snake", "rt");
-    char str[STR_SIZE];
 
-    if (fp_help == NULL)
-    {
-        printf("打开帮助文档失败\n请检查程序所在文件夹中是否有help.snake文件\n");
-        puts("按任意键返回");
-        wait_for_kbhit();
-    }
-    else
-    {
-        fgets(str, STR_SIZE - 1, fp_help);
-        if (strcmp(str, help_first_line) != 0)
-        {
-            puts("警告:帮助文档已失效或者被意外改动,建议您重新下载帮助文档以获取正确帮助!");
-            puts(Github_url);
-            Sleep(1000);
-        }
-        while (fgets(str, STR_SIZE - 1, fp_help) != NULL)
-        {
-            printf("%s", str);
-        }
-
-        fclose(fp_help);
-        putchar('\n');
-        putchar('\n');
-        puts("按任意键返回");
-        wait_for_kbhit();
-    }
-}
 int main()
 {
     main_init("Gluttonous_Snake");
