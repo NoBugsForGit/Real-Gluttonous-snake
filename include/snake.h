@@ -277,6 +277,8 @@ struct Enemy enemy[ENEMY_NUM] = {
     {100, 100, 0, 4, 0, 0, 1},
     {10, 10, 0, 4, 0, 0, 1}};
 
+byte check_map[SIZE_X][SIZE_Y] = {8};
+
 int game_clock = 0;
 
 void read_score();
@@ -312,7 +314,7 @@ void print_map()
     }
     if (id13_num > 0)
     {
-        sprintf(temp, "%s:%d\t", id_dict[13], id13_num);
+        sprintf(temp, "%sx%d\t", id_dict[13], id13_num);
         strcat(chars, temp);
     }
     if (bleed)
@@ -1167,6 +1169,7 @@ void attack(int range)
         if (isEnemy(map[attack_x][attack_y]))
         {
             enemy[map[attack_x][attack_y] - 40].life--;
+            map[attack_x][attack_y] = 0;
         }
         else if (map[attack_x][attack_y] == 4)
         {
@@ -1177,35 +1180,40 @@ void attack(int range)
 
 void attack_surrounded()
 {
-    int check_map[SIZE_X][SIZE_Y] = {8};
+    memset(check_map, 8, SIZE_X*SIZE_Y);
     for (int i = 0; i < snake_length; i++)
     {
-        check_map[snake[i].x - 1][snake[i].y - 1]--;
-        check_map[snake[i].x][snake[i].y - 1]--;
-        check_map[snake[i].x + 1][snake[i].y - 1]--;
-        check_map[snake[i].x - 1][snake[i].y]--;
-        check_map[snake[i].x][snake[i].y]--;
-        check_map[snake[i].x + 1][snake[i].y]--;
-        check_map[snake[i].x - 1][snake[i].y + 1]--;
-        check_map[snake[i].x][snake[i].y + 1]--;
-        check_map[snake[i].x + 1][snake[i].y + 1]--;
+        int x =snake[i].x;
+        int y =snake[i].y;
+        check_map[x - 1][y - 1]--;
+        check_map[x][y - 1]--;
+        check_map[x + 1][y - 1]--;
+        check_map[x - 1][y]--;
+        check_map[x + 1][y]--;
+        check_map[x - 1][y + 1]--;
+        check_map[x][y + 1]--;
+        check_map[x + 1][y + 1]--;
     }
     for (int i = 0; i < SIZE_X; i++)
     {
-        for (int j = 0; i < SIZE_Y; i++)
+        for (int j = 0; j < SIZE_Y; j++)
         {
             if (check_map[i][j] == 0)
             {
                 if (map[i][j] == 4)
                 {
                     map[i][j] = 0;
+                    score++;
                 }
                 else if (isEnemy(map[i][j]))
                 {
                     enemy[map[i][j] - 40].life--;
+                    map[i][j] = 0;
+                    score++;
                 }
             }
         }
+        
     }
 }
 
