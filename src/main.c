@@ -1,4 +1,4 @@
-#include "../include/snake.h"
+#include "snake.c"
 
 
 /*

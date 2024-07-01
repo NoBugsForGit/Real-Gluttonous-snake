@@ -26,16 +26,6 @@ void decrypt_xor(char *message, char *key,int length)
     }
 }
 
-void encrypt_caesar(char* message,int iv)
-{
-
-}
-
-void decrypt_caesar(char* message,int iv)
-{
-
-}
-
 unsigned char *base64_encode(unsigned char *str)
 {
     long len;
